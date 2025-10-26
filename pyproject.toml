@@ -1,0 +1,16 @@
+
+[project]
+name = "src"
+version = "0.1.0"
+description = "My very 1st implementation of the tools I learnt while learning MLOPs in an end-to-end project"
+readme = "README.md"
+authors = [{name = "Shreyash Hiwale", email = "shreycasm007@gmail.com"}]
+requires-python = ">=3.9" 
+
+[tool.setuptools]
+packages = {find = {}}
+
+[tool.setuptools.dynamic]
+dependencies = {file = "requirements.txt"}
+
+
