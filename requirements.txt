@@ -5,5 +5,8 @@ ipykernel
 requests
 fastparquet
 pyarrow
+matplotlib
+seaborn
+mlflow
 
 -e .
