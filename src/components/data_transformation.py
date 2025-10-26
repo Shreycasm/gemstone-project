@@ -6,7 +6,7 @@ from sklearn.preprocessing import FunctionTransformer
 from pathlib import Path
 import pandas as pd
 
-def load_data(file_path: Path)-> pd.DataFrame:
+def load_data_parquet(file_path: Path)-> pd.DataFrame:
     df = pd.read_parquet(file_path)
     return df
 
@@ -63,7 +63,7 @@ def save_object(file_path: Path, obj: object) -> None:
 
 
 if __name__ =="__main__":
-    df = load_data(Path("artifacts/data_ingestion/ingested_data/train.parquet"))
+    df = load_data_parquet(Path("artifacts/data_ingestion/ingested_data/train.parquet"))
     df = change_dtypes(df)
 
     preprocessor_obj = preprocessor(df)

@@ -4,7 +4,7 @@ import joblib
 from sklearn.ensemble import RandomForestRegressor
 from src.components.data_transformation import clip_outliers
 
-def load_data(file_path: Path) -> pd.DataFrame:
+def load_data_parquet(file_path: Path) -> pd.DataFrame:
     df = pd.read_parquet(file_path)
 
     return df
@@ -34,7 +34,7 @@ def save_object(file_path: Path, model: object) -> None:
     joblib.dump(model, file_path)
 
 if __name__ == "__main__":
-    df = load_data(Path("artifacts/data_ingestion/ingested_data/train.parquet"))
+    df = load_data_parquet(Path("artifacts/data_ingestion/ingested_data/train.parquet"))
     preprocessor = load_preprocessor(Path("artifacts/data_transformation/preprocessor.pkl"))
     X, y = seperate_target_feature(df)
     X_processed = preprocessor.transform(X)

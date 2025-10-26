@@ -6,7 +6,7 @@ import numpy as np
 from src.components.data_transformation import clip_outliers
 
 
-def load_data(file_path: str) -> pd.DataFrame:
+def load_data_parquet(file_path: str) -> pd.DataFrame:
     df = pd.read_parquet(file_path)
     return df
 
@@ -54,7 +54,7 @@ def save_report(file_path: Path, report: dict) -> None:
             f.write(f"{key}: {value}\n")
 
 if __name__ == "__main__":
-    df = load_data(file_path=Path("artifacts/data_ingestion/ingested_data/test.parquet"))
+    df = load_data_parquet(file_path=Path("artifacts/data_ingestion/ingested_data/test.parquet"))
     preprocessor = load_preprocessor(file_path=Path("artifacts/data_transformation/preprocessor.pkl"))
     X, y = seperate_target_feature(df)
     X_processed = preprocessor.transform(X)
