@@ -1,43 +1,43 @@
 import pandas as pd
-from pathlib import Path
 import joblib
+from pathlib import Path
 from sklearn.ensemble import RandomForestRegressor
-from src.components.data_transformation import clip_outliers
+from dataclasses import dataclass
+from src.utils.utility import load_joblib_object, save_joblib_object, load_data_parquet
 
-def load_data_parquet(file_path: Path) -> pd.DataFrame:
-    df = pd.read_parquet(file_path)
+@dataclass
+class ModelTrainerConfig:
+    model_trainer_dir: Path = Path("artifacts/models")
+    model_name:str = "random_forest_model.joblib"
+    model_path: Path = model_trainer_dir / model_name
 
-    return df
+@dataclass
+class ModelTrainerArtifacts:
+    model_path: Path
 
-def load_preprocessor(file_path: Path) -> object:
+class ModelTrainer:
 
-    preprocessor = joblib.load(file_path)
+    def __init__(self, config: ModelTrainerConfig) -> None:
+        self.config = config
+         
+    def separate_target_feature(self,df: pd.DataFrame):
+        X = df.drop(columns="price")
+        y = df["price"]
+        return X, y
 
-    return preprocessor
+    def train_model(self,X, y, model=None):
+        if model is None:
+            model = RandomForestRegressor(random_state=42,n_jobs=-1)
+        model.fit(X, y)
+        return model
+    
+    def initiate_model_trainer(self, train_data_path: Path, preprocessor_path: Path)-> ModelTrainerArtifacts:
+        preprocessor = load_joblib_object(preprocessor_path)
+        df = load_data_parquet(train_data_path)
+        X, y = self.separate_target_feature(df)
+        X = preprocessor.transform(X)
+        model = self.train_model(X,y)  
+        save_joblib_object(self.config.model_path, model) 
 
-def seperate_target_feature(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
+        return ModelTrainerArtifacts(model_path = self.config.model_path) 
 
-    X = df.drop(columns="price")
-    y = df["price"]
-
-    return X, y
-
-def model_trainer(X: pd.DataFrame, y: pd.Series, algo):
-    model = algo.fit(X, y)
-
-    return model
-
-def save_object(file_path: Path, model: object) -> None:
-    file_dir = file_path.parent
-    file_dir.mkdir(parents=True, exist_ok=True)
-
-    joblib.dump(model, file_path)
-
-if __name__ == "__main__":
-    df = load_data_parquet(Path("artifacts/data_ingestion/ingested_data/train.parquet"))
-    preprocessor = load_preprocessor(Path("artifacts/data_transformation/preprocessor.pkl"))
-    X, y = seperate_target_feature(df)
-    X_processed = preprocessor.transform(X)
-    rfr = RandomForestRegressor()
-    model = model_trainer(X_processed, y, rfr)
-    save_object(Path("artifacts/models/random_forest_model.joblib"), model)
