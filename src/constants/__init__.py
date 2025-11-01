@@ -1,3 +1,4 @@
+from pathlib import Path
 
 PIPELINE_NAME: str = "GemStone"
 ARTIFACT_DIR: str = "artifacts"
@@ -20,7 +21,7 @@ SAMPLE_DATA_SIZE: float = 0.2
 # <==================== Data Transformation Constants ====================>
 DATA_TRANSFORMATION_DIR: str = "data_transformation"
 PREPROCESSOR_FILE_NAME:str = "preprocessor.pkl"
-SCHEME_FILE_PATH: str = "config\scheme.yaml"
+SCHEME_FILE_PATH: str = Path("config/scheme.yaml")
 
 
 # <==================== Model Trainer Constants ====================>
