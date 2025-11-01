@@ -1,39 +1,26 @@
 import pandas as pd
+import numpy as np
 from pathlib import Path
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
-import joblib
-import numpy as np
-from src.components.data_transformation import DataTransformation, DataTransformationConfig
-from src.components.data_ingestion import DataIngestionArtifacts  
-from dataclasses import dataclass 
-from src.utils.utility import load_data_parquet, load_joblib_object, save_json_file
-
-
-@dataclass
-class ModelEvalConfig:
-    model_eval_dir:Path = Path("artifacts/model_evaluation")
-    eval_file_name:str = "evaluation_report.json" 
-    eval_file_path:Path = model_eval_dir / eval_file_name
-
-@dataclass
-class ModelEvalArtifacts:
-    evel_file_path: Path
+from src.utils.utility import load_data, load_joblib_object, save_json_file, load_yaml_file
+from src.entity.config_entity import ModelEvalConfig
+from src.entity.artifact_entity import ModelEvalArtifacts
+from typing import Tuple
 
 
 class ModelEval:
-    
-    def __init__(self, config: ModelEvalConfig):
+
+    def __init__(self, config: ModelEvalConfig = ModelEvalConfig()):
         self.config = config
+        self.yaml_file = load_yaml_file(self.config.model_eval_scheme_file_path)
+        self.target = self.yaml_file.get("target_feature", [])
 
-    def seperate_target_feature(self,df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
-
-        X = df.drop(columns="price")
-        y = df["price"]
-
+    def separate_target_feature(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
+        X = df.drop(columns=self.target, errors="ignore")
+        y = df[self.target].values.ravel() if isinstance(self.target, list) and len(self.target) == 1 else df[self.target].values
         return X, y
 
-    def eval_model(self,model: object, X: pd.DataFrame, y: pd.Series) -> dict:
-
+    def eval_model(self, model: object, X: pd.DataFrame, y: pd.Series) -> dict:
         predictions = model.predict(X)
 
         mse = mean_squared_error(y, predictions)
@@ -42,30 +29,21 @@ class ModelEval:
         r2 = r2_score(y, predictions)
 
         return {
-            "mse": mse,
-            "rmse": rmse,
-            "mae": mae,
-            "r2": r2
+            "mse": float(mse),
+            "rmse": float(rmse),
+            "mae": float(mae),
+            "r2": float(r2)
         }
 
-    def save_report(file_path: Path, report: dict) -> None:
-        file_dir = file_path.parent
-        file_dir.mkdir(parents=True, exist_ok=True)
-
-        with open(file_path, "w") as f:
-            for key, value in report.items():
-                f.write(f"{key}: {value}\n")
-
-    def initiate_model_eval(self, test_data_path:Path, preprocessor_path:Path,
-                            model_path:Path) -> ModelEvalArtifacts:
-        df = load_data_parquet(test_data_path)
+    def initiate_model_eval(self, test_data_path: Path, preprocessor_path: Path,
+                            model_path: Path) -> ModelEvalArtifacts:
+        
+        df = load_data(test_data_path)
         preprocessor = load_joblib_object(preprocessor_path)
         model = load_joblib_object(model_path)
-
-        X, y = self.seperate_target_feature(df)
-        X = preprocessor.transform(X)
-        report = self.eval_model(model, X, y)
-
+        X, y = self.separate_target_feature(df)
+        X_transformed = preprocessor.transform(X)
+        report = self.eval_model(model, X_transformed, y)
         save_json_file(self.config.eval_file_path, report)
 
-        return ModelEvalArtifacts(evel_file_path=self.config.eval_file_path)
+        return ModelEvalArtifacts(eval_file_path=self.config.eval_file_path)

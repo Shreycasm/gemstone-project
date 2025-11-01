@@ -1,0 +1,19 @@
+drop_columns: ["id"]
+
+numeric_features: ["carat", "depth", "table", "x", "y", "z"]
+
+categorical_features: ["cut", "color", "clarity"]
+
+target_feature: ["price"] 
+
+change_dtypes:
+  carat: float32
+  depth: float32
+  table: float32
+  x: float32
+  y: float32
+  z: float32
+  cut: category
+  color: category
+  clarity: category
+  price: int32
