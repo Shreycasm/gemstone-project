@@ -3,6 +3,11 @@ from pathlib import Path
 import pandas as pd
 from src.entity.config_entity import PredictionPipelineConfig
 from typing import Any
+from src.logger import get_logger
+from src.exception import SpaceshipTitanicException
+import sys
+
+logger = get_logger(__name__)
 
 
 class PredictionPipeline:
@@ -11,11 +16,17 @@ class PredictionPipeline:
         self.config = config
 
     def initiate_prediction_pipeline(self, new_data: pd.DataFrame) -> Any:
-        preprocessor = load_joblib_object(file_path=self.config.preprocessor_file_path)
-        X_processed = preprocessor.transform(new_data)
-        model = load_joblib_object(file_path=self.config.model_file_path)
-        predictions = model.predict(X_processed)
-        return predictions
+        try:
+            logger.info("Prediction Pipeline started...")
+            preprocessor = load_joblib_object(file_path=self.config.preprocessor_file_path)
+            X_processed = preprocessor.transform(new_data)
+            model = load_joblib_object(file_path=self.config.model_file_path)
+            predictions = model.predict(X_processed)
+            logger.info(f"The Predictions are: {predictions}")
+            logger.info("prediction Pipeline Completed."
+                        )        
+        except Exception as e:
+            raise SpaceshipTitanicException(e,sys)
 
 
 if __name__ == "__main__":

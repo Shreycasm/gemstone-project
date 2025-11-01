@@ -9,6 +9,5 @@ matplotlib
 seaborn
 mlflow
 PyYAML
-from_root
 
 -e .
