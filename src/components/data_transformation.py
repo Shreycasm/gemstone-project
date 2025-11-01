@@ -1,73 +1,70 @@
 import pandas as pd
 import numpy as np
-import joblib
 from pathlib import Path
-from dataclasses import dataclass
 from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer, OneHotEncoder
-from src.utils.utility import load_data_parquet, save_joblib_object
+from src.utils.utility import load_data, save_joblib_object, load_yaml_file
+from src.entity.config_entity import DataTransformationConfig
+from src.entity.artifact_entity import DataTransformationArtifacts
 
-@dataclass
-class DataTransformationConfig:
-    data_transformation_dir: Path = Path("artifacts/data_transformation")
-    preprocessor_file_name: str = "preprocessor.pkl"
-    preprocessor_file_path: Path = data_transformation_dir / preprocessor_file_name
-
-    numeric_features = ["carat", "depth", "table", "x", "y", "z"]
-    categorical_features = ["cut", "color", "clarity"]
-
-@dataclass
-class DataTransformationArtifacts:
-    preprocessor_path: Path
 
 class DataTransformation:
 
-    def __init__(self, config: DataTransformationConfig):
+    def __init__(self, config: DataTransformationConfig = DataTransformationConfig()):
         self.config = config
+        self.yaml_file = load_yaml_file(self.config.data_transformation_scheme_file_path)
+        self.drop_columns = self.yaml_file.get("drop_columns", [])
+        self.numeric_columns = self.yaml_file.get("numeric_features", [])
+        self.categorical_columns = self.yaml_file.get("categorical_features", [])
+        self.target = self.yaml_file.get("target_feature", [])
 
     def change_dtypes(self, df: pd.DataFrame) -> pd.DataFrame:
-        return (
-            df
-            .drop(columns="id")
-            .assign(
-                carat=lambda x: x.carat.astype(np.float32),
-                depth=lambda x: x.depth.astype(np.float32),
-                table=lambda x: x.table.astype(np.float32),
-                x=lambda x: x.x.astype(np.float32),
-                y=lambda x: x.y.astype(np.float32),
-                z=lambda x: x.z.astype(np.float32),
-                cut=lambda x: x.cut.astype("category"),
-                color=lambda x: x.color.astype("category"),
-                clarity=lambda x: x.clarity.astype("category"),
-                price=lambda x: x.price.astype(np.int32)
-            )
-        )
-
-    def clip_outliers(self, df: pd.DataFrame) -> pd.DataFrame:
-        df = df.copy()
-        for col in self.config.numeric_features:
-            lower = df[col].quantile(0.01)
-            upper = df[col].quantile(0.99)
-            df[col] = df[col].clip(lower, upper)
+        if self.drop_columns:
+            df = df.drop(columns=self.drop_columns, errors="ignore")
+        dtypes_map = self.yaml_file.get("change_dtypes", {})
+        for col, dtype in dtypes_map.items():
+            if col in df.columns:
+                df[col] = df[col].astype(dtype)
         return df
 
-    def preprocessor(self, df: pd.DataFrame) -> ColumnTransformer:
-        numeric_transform = FunctionTransformer(self.clip_outliers)
+    def _clip_outliers_array(self, X: np.ndarray) -> np.ndarray:
+        lower = np.quantile(X, 0.01, axis=0)
+        upper = np.quantile(X, 0.99, axis=0)
+        return np.clip(X, lower, upper)
+
+    def preprocessor(self) -> ColumnTransformer:
+        numeric_transform = Pipeline([
+            ("clipper", FunctionTransformer(self._clip_outliers_array, validate=False))
+        ])
+
         categorical_transform = OneHotEncoder(handle_unknown="ignore")
-        return ColumnTransformer(
+
+        preprocessor = ColumnTransformer(
             transformers=[
-                ("num", numeric_transform, self.config.numeric_features),
-                ("cat", categorical_transform, self.config.categorical_features)
-            ]
+                ("num", numeric_transform, self.numeric_columns),
+                ("cat", categorical_transform, self.categorical_columns)
+            ],
+            remainder="drop",
+            verbose_feature_names_out=False
         )
 
-    def initiate_data_transformation(self, train_data_path:Path) -> DataTransformationArtifacts:
-        df = load_data_parquet(train_data_path)
-        df = self.change_dtypes(df)
+        return preprocessor
 
-        preprocessor_obj = self.preprocessor(df)
-        preprocessor_obj.fit(df)
+    def initiate_data_transformation(self, train_data_path: Path) -> DataTransformationArtifacts:
+        df = load_data(train_data_path)
+        df = self.change_dtypes(df)
+        features = list(self.numeric_columns) + list(self.categorical_columns)
+        features = [c for c in features if c in df.columns]
+
+        if not features:
+            raise ValueError("No feature columns found for preprocessor fit.")
+
+        X_for_fit = df[features]
+
+        preprocessor_obj = self.preprocessor()
+        preprocessor_obj.fit(X_for_fit)
 
         save_joblib_object(self.config.preprocessor_file_path, preprocessor_obj)
+
         return DataTransformationArtifacts(preprocessor_path=self.config.preprocessor_file_path)
-        

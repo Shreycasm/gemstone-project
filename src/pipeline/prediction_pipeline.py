@@ -1,18 +1,21 @@
 from src.utils.utility import load_joblib_object
 from pathlib import Path
 import pandas as pd
+from src.entity.config_entity import PredictionPipelineConfig
+from typing import Any
 
 
 class PredictionPipeline:
 
-    def initiate_predction_pipeline(self, new_data: pd.DataFrame) -> pd.Series:
+    def __init__(self, config: PredictionPipelineConfig = PredictionPipelineConfig()):
+        self.config = config
 
-        preprocessor = load_joblib_object(file_path=Path("artifacts/data_transformation/preprocessor.pkl"))
-        
+    def initiate_prediction_pipeline(self, new_data: pd.DataFrame) -> Any:
+        preprocessor = load_joblib_object(file_path=self.config.preprocessor_file_path)
         X_processed = preprocessor.transform(new_data)
-        model = load_joblib_object(Path("artifacts/models/random_forest_model.joblib"))
+        model = load_joblib_object(file_path=self.config.model_file_path)
         predictions = model.predict(X_processed)
-        print(predictions)
+        return predictions
 
 
 if __name__ == "__main__":
@@ -28,5 +31,5 @@ if __name__ == "__main__":
         "clarity": ["VS2", "VVS1", "SI1"]
     })
     obj = PredictionPipeline()
-    obj.initiate_predction_pipeline(new_data)   
- 
+    preds = obj.initiate_prediction_pipeline(new_data)
+    print(preds)

@@ -1,32 +1,79 @@
-import pandas as pd
-from pathlib import Path
-import joblib
+from dataclasses import is_dataclass, asdict
 import json
+import yaml
+import joblib
+from pathlib import Path
+from typing import Any, Union
+import pandas as pd
+import urllib.parse
 
 
-def load_csv_data(file_path) -> pd.DataFrame:
-    df = pd.read_csv(file_path)
-    return df
+def _ensure_path(file_path: Union[str, Path]) -> Path:
+    return Path(file_path)
 
-def save_data_to_parquet(df: pd.DataFrame, file_path: Path)-> None:
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(file_path, index= False, engine="pyarrow", compression="snappy")
 
-def load_data_parquet(file_path: Path)-> pd.DataFrame:
-    df = pd.read_parquet(file_path)
-    return df
+def load_data(file_path: Union[str, Path]) -> pd.DataFrame:
+    path_or_url = str(file_path)
+    parsed = urllib.parse.urlparse(path_or_url)
+    is_url = parsed.scheme in ("http", "https")
 
-def save_joblib_object(file_path: Path, obj: object) -> None:
-    file_dir = file_path.parent
-    file_dir.mkdir(parents=True, exist_ok=True)
-    joblib.dump(obj, file_path)
+    if is_url:
+        return pd.read_csv(path_or_url, encoding="utf-8", low_memory=False)
+    else:
+        p = _ensure_path(path_or_url)
+        suffix = p.suffix.lstrip(".").lower()
+        if suffix == "csv":
+            return pd.read_csv(p, encoding="utf-8", low_memory=False)
+        elif suffix in ("parquet", "pq"):
+            return pd.read_parquet(p)
+        else:
+            raise ValueError(f"Unsupported extension: {suffix} for file {p}")
 
-def load_joblib_object(file_path: Path) -> object:
-    with open(file_path, "rb") as obj:
-        return joblib.load(obj)
-    
-def save_json_file(file_path:str, data:dict) -> None:
-    file_dir = Path(file_path).parent
-    file_dir.mkdir(parents=True, exist_ok=True)
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=4)
+
+def save_data(df: pd.DataFrame, file_path: Union[str, Path]) -> None:
+    p = _ensure_path(file_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    suffix = p.suffix.lstrip(".").lower()
+
+    if suffix == "csv":
+        df.to_csv(p, index=False, encoding="utf-8")
+    elif suffix in ("parquet", "pq"):
+        df.to_parquet(p, index=False, engine="pyarrow")
+    else:
+        raise ValueError(f"Unsupported extension: {suffix} for file {p}")
+
+
+def save_joblib_object(file_path: Union[str, Path], obj: Any) -> None:
+    p = _ensure_path(file_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(obj, p)
+
+
+def load_joblib_object(file_path: Union[str, Path]) -> Any:
+    p = _ensure_path(file_path)
+    return joblib.load(p)
+
+
+def load_yaml_file(file_path: Union[str, Path]) -> dict:
+    p = _ensure_path(file_path)
+    with open(p, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
+def save_json_file(file_path: Union[str, Path], data: Any, indent: int = 4) -> None:
+    p = _ensure_path(file_path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+
+    if is_dataclass(data):
+        data = asdict(data)
+
+    def default_serializer(obj):
+        if isinstance(obj, Path):
+            return str(obj)
+        return str(obj)
+
+    if not p.suffix:
+        p = p.with_suffix(".json")
+
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=indent, default=default_serializer, ensure_ascii=False)
