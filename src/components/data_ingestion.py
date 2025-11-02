@@ -12,7 +12,7 @@ logger  = get_logger(__name__)
 
 class DataIngestion:
 
-    def __init__(self, config: DataIngestionConfig = DataIngestionConfig()) -> None:
+    def __init__(self, config: DataIngestionConfig) -> None:
         self.config = config
 
     def save_data_to_feature_store(
@@ -61,7 +61,6 @@ class DataIngestion:
 
     def initiate_data_ingestion(self) -> DataIngestionArtifacts:
         try:
-            logger.info("Data Ingestion Component Started.")
 
             mode = os.getenv("MODE" , "development")
             logger.info(f"Working in {mode} environment.")
@@ -93,17 +92,27 @@ class DataIngestion:
                 test_data_path=self.config.test_data_file_path
             )
 
+
             logger.info(f"Data Ingestion Artifacts: {data_ingestion_artifacts}")
 
-            logger.info("Data Ingestion component completed.")
-
             return data_ingestion_artifacts
+
         
         except Exception as e:
             raise SpaceshipTitanicException(e,sys)
 
 
+
+
 if __name__ == "__main__":
-    obj = DataIngestion()
+    from src.config.configuration import ConfigurationManager
+
+    logger.info(">>>>>>>>>>>>>>>>> Data Ingestion Component Started. <<<<<<<<<<<<<<<<<")
+
+    config_manager = ConfigurationManager()
+    data_ingestion_config = config_manager.get_data_ingestion_config()
+
+    obj = DataIngestion(config = data_ingestion_config)
     artifacts = obj.initiate_data_ingestion()
-    print(artifacts)
+
+    logger.info(">>>>>>>>>>>>>>>>> Data Ingestion Component Completed. <<<<<<<<<<<<<<<<<")

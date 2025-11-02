@@ -43,4 +43,3 @@ if __name__ == "__main__":
     })
     obj = PredictionPipeline()
     preds = obj.initiate_prediction_pipeline(new_data)
-    print(preds)

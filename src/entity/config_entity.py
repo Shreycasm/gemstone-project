@@ -1,13 +1,22 @@
 from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 from src.constants import *
 
 
 @dataclass
 class TrainingPipeline:
     pipeline_name:str = PIPELINE_NAME
-    artifact_dir:str = Path(ARTIFACT_DIR)
+    artifact_dir: Path = Path(ARTIFACT_DIR)
+    config_file_dir: Path = Path(CONFIG_FILE_DIR)   
+
+
+@dataclass
+class ConfigurationManagerConfig:
+    config_file_dir: str =  TrainingPipeline.config_file_dir
+    scheme_config_file_path: Path =  config_file_dir / SCHEME_CONFIG_FILE_PATH
+    model_config_file_path: Path = config_file_dir / MODEL_CONFIG_FILE_DIR
 
 @dataclass
 class DataIngestionConfig:
@@ -32,24 +41,27 @@ class DataIngestionConfig:
 
 @dataclass
 class DataTransformationConfig:
+    scheme_file: Any
     data_transformation_dir: Path = TrainingPipeline.artifact_dir / DATA_TRANSFORMATION_DIR
     preprocessor_file_name: str = PREPROCESSOR_FILE_NAME
     preprocessor_file_path: Path = data_transformation_dir / preprocessor_file_name
-    data_transformation_scheme_file_path : Path = SCHEME_FILE_PATH
+    
 
 @dataclass
 class ModelTrainerConfig:
+    model_config: Any
+    scheme_config: Any
     model_trainer_dir: Path = TrainingPipeline.artifact_dir / MODEL_TRAINER_DIR
     model_name:str = MODEL_NAME
     model_path: Path = model_trainer_dir / model_name
-    model_trainer_scheme_file_path: Path = SCHEME_FILE_PATH
 
 @dataclass
 class ModelEvalConfig:
+    model_config: Any
+    scheme_config: Any
     model_eval_dir: Path = TrainingPipeline.artifact_dir / MODEL_EVALUATION
     eval_file_name: str = MODEL_EVALUATION_REPORT_NAME 
     eval_file_path: Path = model_eval_dir / eval_file_name
-    model_eval_scheme_file_path: Path = SCHEME_FILE_PATH 
 
 @dataclass
 class PredictionPipelineConfig:

@@ -46,7 +46,9 @@ def save_data(df: pd.DataFrame, file_path: Union[str, Path]) -> None:
 def save_joblib_object(file_path: Union[str, Path], obj: Any) -> None:
     p = _ensure_path(file_path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(obj, p)
+    with open(p, "wb") as f:
+        joblib.dump(obj, f)
+
 
 
 def load_joblib_object(file_path: Union[str, Path]) -> Any:
@@ -77,3 +79,9 @@ def save_json_file(file_path: Union[str, Path], data: Any, indent: int = 4) -> N
 
     with open(p, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=indent, default=default_serializer, ensure_ascii=False)
+
+
+def load_json_file(file_path: Union[str, Path]) -> dict:
+    p = _ensure_path(file_path)
+    with open(p, "r", encoding="utf-8") as f:
+        return json.load(f)
