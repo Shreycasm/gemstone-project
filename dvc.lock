@@ -30,8 +30,8 @@ stages:
     deps:
     - path: artifacts/data_ingestion/ingested_data/train.parquet
       hash: md5
-      md5: eb3f647b73ac074a9907ecbfa28c23b0
-      size: 457636
+      md5: 9d3e9843a2655bb657f2c56d3f571fce
+      size: 2235779
     - path: src/components/data_transformation.py
       hash: md5
       md5: 7ee54b1220c31088ae8e6f36d16a2ce2
@@ -42,8 +42,8 @@ stages:
     deps:
     - path: artifacts/data_ingestion/ingested_data/train.parquet
       hash: md5
-      md5: eb3f647b73ac074a9907ecbfa28c23b0
-      size: 457636
+      md5: 9d3e9843a2655bb657f2c56d3f571fce
+      size: 2235779
     - path: artifacts/data_transformation/preprocessor.pkl
       hash: md5
       md5: 27b51b79c46ae668fe15f0f6f3ed3a07
@@ -55,24 +55,24 @@ stages:
     outs:
     - path: artifacts/model_trainer/random_forest_model.joblib
       hash: md5
-      md5: 52958f7948eeffa54e97984c8345ee79
-      size: 234391201
+      md5: 5991406ea09a14d6c86a969952ce3a49
+      size: 1159834145
   model_evaluation:
     cmd:
     - python "src/components/model_eval.py"
     deps:
     - path: artifacts/data_ingestion/ingested_data/test.parquet
       hash: md5
-      md5: c961c281aff097a36e2540c48b863a7c
-      size: 209654
+      md5: c00096bc7629145a7f431570a1c70afb
+      size: 967759
     - path: artifacts/data_transformation/preprocessor.pkl
       hash: md5
       md5: 27b51b79c46ae668fe15f0f6f3ed3a07
       size: 3024
     - path: artifacts/model_trainer/random_forest_model.joblib
       hash: md5
-      md5: 52958f7948eeffa54e97984c8345ee79
-      size: 234391201
+      md5: 5991406ea09a14d6c86a969952ce3a49
+      size: 1159834145
     - path: src/components/model_eval.py
       hash: md5
       md5: 89a59bd502941b2d2e17cebb1a500294

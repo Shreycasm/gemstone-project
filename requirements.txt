@@ -9,5 +9,6 @@ matplotlib
 seaborn
 mlflow
 PyYAML
+dvc_s3
 
 -e .
