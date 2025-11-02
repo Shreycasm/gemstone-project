@@ -1,0 +1,39 @@
+stages:
+  data_ingestion:
+    cmd: python "src/components/data_ingestion.py"
+    deps:
+      - src/components/data_ingestion.py
+      - src/entity/config_entity.py
+      - src/entity/artifact_entity.py
+      - src/constants/__init__.py
+    outs:
+      - artifacts/data_ingestion/feature_store/raw_data.parquet
+
+  data_transformation:
+    cmd:
+      - python "src/components/data_transformation.py"
+    deps:
+      - src/components/data_transformation.py
+      - artifacts/data_ingestion/ingested_data/train.parquet
+
+
+  model_trainer:
+    cmd:
+      - python "src/components/model_trainer.py"
+    deps:
+      - src/components/model_trainer.py
+      - artifacts/data_transformation/preprocessor.pkl
+      - artifacts/data_ingestion/ingested_data/train.parquet
+    outs:
+      - artifacts/model_trainer/random_forest_model.joblib
+
+  model_evaluation:
+    cmd: 
+     - python "src/components/model_eval.py"
+    deps:
+     - src/components/model_eval.py
+     - artifacts/model_trainer/random_forest_model.joblib
+     - artifacts/data_ingestion/ingested_data/test.parquet
+     - artifacts/data_transformation/preprocessor.pkl
+
+

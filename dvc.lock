@@ -1,0 +1,79 @@
+schema: '2.0'
+stages:
+  data_ingestion:
+    cmd: python "src/components/data_ingestion.py"
+    deps:
+    - path: src/components/data_ingestion.py
+      hash: md5
+      md5: 328532cc5134e8cb587b36e180eac493
+      size: 4447
+    - path: src/constants/__init__.py
+      hash: md5
+      md5: ea1065bcede99ea0e25b3cf1639f4558
+      size: 1336
+    - path: src/entity/artifact_entity.py
+      hash: md5
+      md5: 2262bb93fcd98e4f59bbe751a7311d4e
+      size: 371
+    - path: src/entity/config_entity.py
+      hash: md5
+      md5: 66e70d865cb713271971e16c2a1f629e
+      size: 2601
+    outs:
+    - path: artifacts/data_ingestion/feature_store/raw_data.parquet
+      hash: md5
+      md5: 9616fde18bc8d95ea5fd14fdc339d880
+      size: 2917178
+  data_transformation:
+    cmd:
+    - python "src/components/data_transformation.py"
+    deps:
+    - path: artifacts/data_ingestion/ingested_data/train.parquet
+      hash: md5
+      md5: 9d3e9843a2655bb657f2c56d3f571fce
+      size: 2235779
+    - path: src/components/data_transformation.py
+      hash: md5
+      md5: 7ee54b1220c31088ae8e6f36d16a2ce2
+      size: 5371
+  model_trainer:
+    cmd:
+    - python "src/components/model_trainer.py"
+    deps:
+    - path: artifacts/data_ingestion/ingested_data/train.parquet
+      hash: md5
+      md5: 9d3e9843a2655bb657f2c56d3f571fce
+      size: 2235779
+    - path: artifacts/data_transformation/preprocessor.pkl
+      hash: md5
+      md5: 27b51b79c46ae668fe15f0f6f3ed3a07
+      size: 3024
+    - path: src/components/model_trainer.py
+      hash: md5
+      md5: dddf0f09b8845a5bc146146733abb141
+      size: 4093
+    outs:
+    - path: artifacts/model_trainer/random_forest_model.joblib
+      hash: md5
+      md5: 5991406ea09a14d6c86a969952ce3a49
+      size: 1159834145
+  model_evaluation:
+    cmd:
+    - python "src/components/model_eval.py"
+    deps:
+    - path: artifacts/data_ingestion/ingested_data/test.parquet
+      hash: md5
+      md5: c00096bc7629145a7f431570a1c70afb
+      size: 967759
+    - path: artifacts/data_transformation/preprocessor.pkl
+      hash: md5
+      md5: 27b51b79c46ae668fe15f0f6f3ed3a07
+      size: 3024
+    - path: artifacts/model_trainer/random_forest_model.joblib
+      hash: md5
+      md5: 5991406ea09a14d6c86a969952ce3a49
+      size: 1159834145
+    - path: src/components/model_eval.py
+      hash: md5
+      md5: 89a59bd502941b2d2e17cebb1a500294
+      size: 4828
